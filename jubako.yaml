@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: git-repo-storage
+  namespace: subsequent
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: local-path
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jubako
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jubako
+  template:
+    metadata:
+      labels:
+        app: jubako
+    spec:
+      containers:
+      - name: jubako
+        image: jubako:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 22
+        volumeMounts:
+        - name: git-repo-volume
+          mountPath: /repos
+      volumes:
+      - name: git-repo-volume
+        persistentVolumeClaim:
+          claimName: git-repo-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jubako
+spec:
+  selector:
+    app: jubako
+  ports:
+    - protocol: TCP
+      port: 22
+      targetPort: 22
